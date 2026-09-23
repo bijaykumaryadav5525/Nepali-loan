@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <meta name="theme-color" content="#f2f1ee" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1a2325" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#12161b" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>App Anniversary Interest Calculator</title>
 <style>
@@ -22,25 +22,32 @@
     --font-mono: "SF Mono", Monaco, "Cascadia Code", Consolas, monospace;
   }
 
-  /* Dark Mode Overrides */
+  /* ==== REFINED DARK MODE COLOR PALETTE ==== */
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #13191b; --surface: #1e2629; --surface-raised: #262f33;
-      --border: rgba(255, 255, 255, 0.1); --text-primary: #f0f4f4;
-      --text-secondary: #b0bec3; --text-tertiary: #88989c;
-      --input-bg: #1e2629; --input-border: #3a4749;
-      --table-header-bg: #2a363b; --table-header-text: #b0bec3;
-      --error-color: #e07b5a;
+      --bg: #12161b;             /* Deep slate background */
+      --surface: #1a2026;        /* Card background */
+      --surface-raised: #21282f; /* Lighter card background */
+      --border: rgba(255, 255, 255, 0.08);
+      --text-primary: #e2e8f0;   /* Softer off-white text */
+      --text-secondary: #94a3b8; /* Soft gray for labels */
+      --text-tertiary: #64748b;
+      
+      --input-bg: #2c353f;       /* Distinct slate input background */
+      --input-border: #3e4a56;   
+      --table-header-bg: #21282f; 
+      --table-header-text: #cbd5e1;
+      --error-color: #f87171;
     }
-    body { background: linear-gradient(180deg, #13191b 0%, #0d1113 100%); }
-    .ps-card { background: #1e2629; border-color: rgba(255,255,255,0.05); }
-    .formula-cell { background: rgba(255,255,255,0.05); color: #b0bec3; }
-    .panel-table td { border-top: 1px solid rgba(255,255,255,0.05); }
+    body { background: linear-gradient(180deg, #12161b 0%, #0d1115 100%); }
+    .ps-card { background: #21282f; border-color: rgba(255,255,255,0.05); }
+    .formula-cell { background: rgba(255,255,255,0.04); color: #94a3b8; border-color: rgba(255,255,255,0.02); }
+    .panel-table td { border-top: 1px solid rgba(255,255,255,0.06); }
     .panel-table td:first-child { border-bottom: 1px dashed rgba(255,255,255,0.1); }
-    .panel-table td { border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .math-section .big-code { background: #13191b; border-color: rgba(255,255,255,0.1); }
+    .panel-table td { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .math-section .big-code { background: #1a2026; border-color: rgba(255,255,255,0.08); }
     .formula-hero { background: linear-gradient(135deg, rgba(39, 155, 118, 0.15), rgba(139, 211, 188, 0.05)); }
-    .field select { background-image: linear-gradient(45deg, transparent 50%, #b0bec3 50%), linear-gradient(135deg, #b0bec3 50%, transparent 50%); }
+    .field select { background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%), linear-gradient(135deg, #94a3b8 50%, transparent 50%); }
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-text-size-adjust: 100%; }
@@ -63,7 +70,7 @@
   /* Form & Inputs */
   .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; margin-bottom: 20px; }
   .field { display: flex; flex-direction: column; gap: 8px; }
-  .field label { font-size: 13px; color: var(--text-secondary); font-weight: 800; }
+  .field label { font-size: 13px; color: var(--text-secondary); font-weight: 700; }
   .field input, .field select {
     width: 100%; padding: 15px 16px; border-radius: 999px; border: 1px solid var(--input-border);
     background: var(--input-bg); color: var(--text-primary); font-size: 15px; outline: none;
@@ -422,7 +429,7 @@ function clearErrors() {
   document.querySelectorAll('.field input, .field select').forEach(i => i.classList.remove('error'));
 }
 
-function showError(fieldId, message) {
+function showError(fieldId) {
   const field = document.getElementById(fieldId);
   field.classList.add('has-error');
   field.querySelector('input, select').classList.add('error');
