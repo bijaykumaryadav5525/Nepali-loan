@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="theme-color" content="#f2f1ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a2325" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>App Anniversary Interest Calculator</title>
+<style>
+  :root {
+    /* Light Mode Colors */
+    --bg: #f2f1ee; --surface: #ffffff; --surface-raised: #f7f7f7;
+    --border: rgba(38, 48, 47, 0.12); --text-primary: #1a2325;
+    --text-secondary: #3a4749; --text-tertiary: #5a6966;
+    --accent: #f2b566; --accent3: #61c4a5; --accent4: #88d3bf;
+    --dark-card-bg: #2a363b; --dark-card-border: rgba(255,255,255,0.06);
+    --input-bg: #ffffff; --input-border: #d1d5db;
+    --table-header-bg: #e8eceb; --table-header-text: #2a363b;
+    --error-color: #d66e4e;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "SF Mono", Monaco, "Cascadia Code", Consolas, monospace;
+  }
+
+  /* Dark Mode Overrides */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13191b; --surface: #1e2629; --surface-raised: #262f33;
+      --border: rgba(255, 255, 255, 0.1); --text-primary: #f0f4f4;
+      --text-secondary: #b0bec3; --text-tertiary: #88989c;
+      --input-bg: #1e2629; --input-border: #3a4749;
+      --table-header-bg: #2a363b; --table-header-text: #b0bec3;
+      --error-color: #e07b5a;
+    }
+    body { background: linear-gradient(180deg, #13191b 0%, #0d1113 100%); }
+    .ps-card { background: #1e2629; border-color: rgba(255,255,255,0.05); }
+    .formula-cell { background: rgba(255,255,255,0.05); color: #b0bec3; }
+    .panel-table td { border-top: 1px solid rgba(255,255,255,0.05); }
+    .panel-table td:first-child { border-bottom: 1px dashed rgba(255,255,255,0.1); }
+    .panel-table td { border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .math-section .big-code { background: #13191b; border-color: rgba(255,255,255,0.1); }
+    .formula-hero { background: linear-gradient(135deg, rgba(39, 155, 118, 0.15), rgba(139, 211, 188, 0.05)); }
+    .field select { background-image: linear-gradient(45deg, transparent 50%, #b0bec3 50%), linear-gradient(135deg, #b0bec3 50%, transparent 50%); }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-text-size-adjust: 100%; }
+  body { font-family: var(--font-sans); background: linear-gradient(180deg, #f5f4f2 0%, #eef0ef 100%); color: var(--text-primary); line-height: 1.6; padding: 16px; min-height: 100vh; transition: background 0.3s ease; }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .header { font-size: clamp(24px, 4vw, 34px); font-weight: 800; margin-bottom: 4px; letter-spacing: -0.4px; }
+  .subheader { font-size: 14px; color: var(--text-tertiary); margin-bottom: 18px; }
+
+  /* Formula Hero */
+  .formula-hero {
+    background: linear-gradient(135deg, rgba(39, 155, 118, 0.1), rgba(139, 211, 188, 0.1));
+    border: 1px solid var(--border); border-radius: 18px; padding: 20px; margin-bottom: 20px; text-align: center;
+  }
+  .formula-hero.hidden { display: none; }
+  .formula-hero .big { font-family: var(--font-mono); font-size: clamp(18px, 2.5vw, 26px); font-weight: 700; }
+  .formula-hero .big .green { color: #0f8d67; }
+  .formula-hero .small { font-size: 13px; color: var(--text-secondary); margin-top: 10px; }
+
+  /* Form & Inputs */
+  .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; margin-bottom: 20px; }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field label { font-size: 13px; color: var(--text-secondary); font-weight: 800; }
+  .field input, .field select {
+    width: 100%; padding: 15px 16px; border-radius: 999px; border: 1px solid var(--input-border);
+    background: var(--input-bg); color: var(--text-primary); font-size: 15px; outline: none;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease; position: relative; z-index: 2;
+    -webkit-appearance: none; -moz-appearance: none; appearance: none; color-scheme: light dark;
+  }
+  .field select {
+    background-image: linear-gradient(45deg, transparent 50%, #3c4349 50%), linear-gradient(135deg, #3c4349 50%, transparent 50%);
+    background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px);
+    background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; padding-right: 40px; font-weight: 600;
+  }
+  .field select option { background: var(--surface); color: var(--text-primary); }
+  .field input:focus, .field select:focus { border-color: rgba(77, 210, 163, 0.95); box-shadow: 0 0 0 3px rgba(77, 210, 163, 0.25); z-index: 25; }
+  .field input::placeholder { color: #888888; opacity: 1; }
+  
+  /* Error States */
+  .field input.error, .field select.error { border-color: var(--error-color); box-shadow: 0 0 0 3px rgba(214, 110, 78, 0.15); }
+  .error-msg { color: var(--error-color); font-size: 12px; font-weight: 600; margin-top: 4px; display: none; padding-left: 8px; }
+  .field.has-error .error-msg { display: block; animation: shake 0.4s ease; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+  .date-row { display: flex; gap: 8px; position: relative; z-index: 3; }
+  .date-row select { flex: 1; min-width: 0; }
+
+  .btn {
+    padding: 18px 24px; border-radius: 18px; border: none;
+    background: linear-gradient(90deg, #f0b264 0%, #dcb875 48%, #88d3be 100%);
+    color: #1d2729; font-size: 18px; font-weight: 900; cursor: pointer; width: 100%;
+    margin-bottom: 24px; transition: transform 0.1s, opacity 0.15s, box-shadow 0.2s; position: relative; z-index: 1;
+    box-shadow: 0 10px 20px rgba(96, 136, 122, 0.12);
+  }
+  .btn:hover { opacity: 0.96; transform: translateY(-1px); box-shadow: 0 12px 24px rgba(96, 136, 122, 0.15); }
+  .btn:active { transform: scale(0.98); }
+
+  /* Panels */
+  .panel { border-radius: 16px; border: 1px solid var(--border); background: var(--surface); overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+  .panel-header { padding: 16px 20px; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px; background: linear-gradient(90deg, rgba(116,167,255,0.08), transparent); border-bottom: 1px solid rgba(116,167,255,0.15); }
+  .panel-header .icon { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: rgba(116,167,255,0.15); color: #3b82f6; }
+  .panel-header .subtitle { font-size: 11px; font-weight: 500; color: var(--text-tertiary); margin-left: auto; }
+  .panel-body { padding: 20px; }
+
+  /* Summary Cards */
+  .panel-summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+  .ps-card { padding: 16px 12px; border-radius: 12px; background: var(--dark-card-bg); border: 1px solid var(--dark-card-border); display: flex; flex-direction: column; justify-content: center; align-items: center; transition: transform 0.2s; }
+  .ps-card .ps-label { font-size: 10px; color: #b0bec3; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 600; text-align: center; }
+  .ps-card .ps-value { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: #ffffff; text-align: center; }
+
+  /* Table (Desktop Pattern) */
+  .panel-table { border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; }
+  .panel-table table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 740px; }
+  .panel-table th { background: var(--table-header-bg); color: var(--table-header-text); font-weight: 700; text-align: left; padding: 12px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .panel-table td { padding: 12px 10px; border-top: 1px solid var(--border); color: var(--text-primary); font-variant-numeric: tabular-nums; vertical-align: top; }
+  .panel-table .num { text-align: right; }
+  .panel-table .app-highlight td { font-weight: 600; background: rgba(59,130,246,0.03); }
+  
+  .formula-cell { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-top: 6px; background: rgba(0,0,0,0.04); padding: 6px 10px; border-radius: 6px; display: inline-block; word-break: break-all; border: 1px solid rgba(0,0,0,0.02); }
+
+  /* Math Section */
+  .math-section { margin-top: 20px; padding: 24px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+  .math-section h3 { margin: 0 0 16px 0; font-size: 18px; color: var(--text-primary); }
+  .math-section p { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+  .math-section .big-code { display: block; padding: 20px; background: var(--surface-raised); border-radius: 10px; border: 1px solid var(--border); font-family: var(--font-mono); font-size: 13px; color: var(--text-primary); margin: 16px 0; line-height: 1.8; word-break: break-word; overflow-wrap: anywhere; }
+  .math-section strong { color: #0f8d67; }
+  @media (prefers-color-scheme: dark) { .math-section strong { color: #61c4a5; } }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--text-tertiary); font-size: 15px; }
+  .badge { display: inline-block; padding: 8px 16px; border-radius: 999px; background: rgba(116,167,255,0.1); font-size: 13px; font-weight: 600; color: #3b82f6; margin-bottom: 16px; border: 1px solid rgba(148,175,196,0.18); }
+
+  /* ================= RESPONSIVE PATTERNS ================= */
+  @media(max-width: 1024px) {
+    .panel-summary { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  /* Mobile Pattern: Stacked Layout & Vertical Cards */
+  @media(max-width: 720px) {
+    .form-grid { grid-template-columns: 1fr; gap: 14px; }
+    body { padding: 12px; }
+    .panel-header .subtitle { display: none; }
+    
+    /* Summary Cards: Vertical Stack */
+    .panel-summary { grid-template-columns: 1fr; gap: 10px; }
+    .ps-card { flex-direction: row; justify-content: space-between; padding: 16px; border-radius: 14px; }
+    .ps-card .ps-label { margin-bottom: 0; font-size: 13px; color: #d1d9dc; }
+    .ps-card .ps-value { font-size: 18px; }
+
+    /* Table Transformation: Rows into Cards */
+    .panel-table { border: none; overflow: visible; background: transparent; }
+    .panel-table table, .panel-table thead, .panel-table tbody, .panel-table th, .panel-table td, .panel-table tr { 
+      display: block; width: 100%; min-width: 0; 
+    }
+    .panel-table thead { display: none; }
+    
+    /* Each row becomes a Card with Header */
+    .panel-table tr { 
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px; 
+      margin-bottom: 16px; padding: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.04); overflow: hidden;
+    }
+    
+    /* Card Header (Period) */
+    .panel-table td:first-child { 
+      background: var(--surface-raised); padding: 14px 18px; border-bottom: 1px solid var(--border); 
+      text-align: left; margin-bottom: 0; display: block;
+    }
+    .panel-table td:first-child::before { display: none; }
+    .panel-table td:first-child > div:first-child { font-size: 14px !important; color: var(--text-primary); }
+    
+    /* Formula Box inside Card */
+    .panel-table td:first-child .formula-cell {
+      margin-top: 8px; width: 100%; text-align: left; font-size: 12px;
+      padding: 8px 10px; background: var(--input-bg); border-radius: 6px; color: var(--text-secondary);
+      line-height: 1.5; word-break: break-word;
+    }
+    
+    /* Card Body (Data Rows) */
+    .panel-table td:not(:first-child) { 
+      border: none; padding: 14px 18px; display: flex; justify-content: space-between; 
+      align-items: center; border-bottom: 1px solid var(--border); font-size: 15px; text-align: right;
+      color: var(--text-primary);
+    }
+    .panel-table td:not(:first-child)::before { 
+      content: attr(data-label); font-weight: 700; font-size: 12px; color: var(--text-tertiary); 
+      text-transform: uppercase; flex-shrink: 0; margin-right: 16px; text-align: left;
+    }
+    .panel-table td:last-child { border-bottom: none; }
+    
+    /* Math Section Mobile Adjustments */
+    .math-section { padding: 16px; }
+    .math-section .big-code { padding: 16px; font-size: 12px; line-height: 1.7; }
+  }
+
+  @media(max-width: 400px) {
+    .date-row { flex-direction: column; gap: 6px; }
+    .ps-card { padding: 14px; }
+    .panel-table td:not(:first-child) { padding: 12px 14px; font-size: 14px; }
+    .panel-table td:first-child { padding: 12px 14px; }
+  }
+</style>
+<base target="_blank">
+</head>
+<body>
+<div class="container">
+  <div class="header">💰 Interest Calculator</div>
+  <div class="subheader">📆 App Anniversary Method</div>
+
+  <div class="formula-hero hidden" id="formulaHero">
+    <div class="big"><span class="green">Interest = Principal × Rate × Time</span></div>
+    <div class="small">Each year uses the previous closing balance as the next principal</div>
+  </div>
+
+  <div class="form-grid">
+    <div class="field" id="fieldPrincipal">
+      <label>💵 Principal (₹)</label>
+      <input type="number" id="principal" placeholder="Enter principal" inputmode="decimal">
+      <div class="error-msg">Please enter a valid principal amount.</div>
+    </div>
+    <div class="field" id="fieldRate">
+      <label>📈 Monthly rate (%)</label>
+      <input type="number" id="rate" placeholder="Enter monthly rate" step="0.1" inputmode="decimal">
+      <div class="error-msg">Please enter a valid monthly rate.</div>
+    </div>
+    <div class="field" id="fieldStartDate">
+      <label>📅 Start date (BS)</label>
+      <div class="date-row">
+        <select id="sYear"></select>
+        <select id="sMonth"></select>
+        <select id="sDay"></select>
+      </div>
+      <div class="error-msg">Please select a complete start date.</div>
+    </div>
+    <div class="field" id="fieldEndDate">
+      <label>📆 Return date (BS)</label>
+      <div class="date-row">
+        <select id="eYear"></select>
+        <select id="eMonth"></select>
+        <select id="eDay"></select>
+      </div>
+      <div class="error-msg">Please select a complete return date.</div>
+    </div>
+  </div>
+
+  <button class="btn" onclick="calculateApp()">✅ Apply</button>
+
+  <div id="results" style="display:none">
+    <div class="badge" id="durationBadge"></div>
+
+    <div class="dual-grid">
+      <div class="panel">
+        <div class="panel-header app">
+          <div class="icon">📱</div>
+          <div><div class="title">App Anniversary Method</div></div>
+          <div class="subtitle">Compounds on loan date</div>
+        </div>
+        <div class="panel-body">
+          <div class="panel-summary">
+            <div class="ps-card">
+              <div class="ps-label">Principal</div>
+              <div class="ps-value" id="appPrincipal">—</div>
+            </div>
+            <div class="ps-card">
+              <div class="ps-label">Monthly Interest</div>
+              <div class="ps-value" style="color:#f2b566" id="appMonthlyInterest">—</div>
+            </div>
+            <div class="ps-card">
+              <div class="ps-label">Daily Interest</div>
+              <div class="ps-value" style="color:#f2b566" id="appDailyInterest">—</div>
+            </div>
+            <div class="ps-card">
+              <div class="ps-label">Interest</div>
+              <div class="ps-value" style="color:#61c4a5" id="appInterest">—</div>
+            </div>
+            <div class="ps-card">
+              <div class="ps-label">Total</div>
+              <div class="ps-value" style="color:#61c4a5" id="appTotal">—</div>
+            </div>
+          </div>
+          <div class="panel-table">
+            <table>
+              <thead>
+                <tr><th>Period</th><th class="num">Opening</th><th class="num">Daily Interest</th><th class="num">Monthly Interest</th><th class="num">Period Interest</th><th class="num">Closing</th></tr>
+              </thead>
+              <tbody id="appTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="math-section" id="mathBox"></div>
+  </div>
+
+  <div id="emptyState" class="empty">Enter BS dates, principal, and rate — then calculate.</div>
+</div>
+
+<script>
+// ==================== NEPALI CALENDAR ====================
+const nepaliMonths = ['Baisakh','Jestha','Ashad','Shrawan','Bhadra','Ashwin','Kartik','Mangsir','Poush','Magh','Falgun','Chaitra'];
+const START_YEAR = 2060;
+const END_YEAR = 2090;
+const yearPatterns = [
+  [31,31,32,31,31,31,30,29,30,29,30,30],
+  [31,31,31,32,31,31,30,29,30,29,30,30],
+  [31,31,32,31,31,31,30,29,30,29,30,30],
+  [31,32,31,32,31,30,30,30,29,29,30,30]
+];
+const monthLengths = {};
+for (let year = START_YEAR; year <= END_YEAR; year++) {
+  const patternIndex = (year - START_YEAR) % yearPatterns.length;
+  monthLengths[year] = [...yearPatterns[patternIndex]];
+}
+function getMonthLength(y,m){ const ml=monthLengths[y]; return ml ? ml[m-1] : 30; }
+function getYearTotalDays(y){ return monthLengths[y] ? monthLengths[y].reduce((sum,v)=>sum+v,0) : 360; }
+function toOrdinal(date){
+  let total=0;
+  for(let y=START_YEAR; y<date.y; y++) total += getYearTotalDays(y);
+  for(let m=1; m<date.m; m++) total += getMonthLength(date.y,m);
+  return total + date.d - 1;
+}
+function compareDates(a,b){
+  if(a.y !== b.y) return a.y - b.y;
+  if(a.m !== b.m) return a.m - b.m;
+  return a.d - b.d;
+}
+function fmt(n){ return Number.isFinite(n) ? n.toLocaleString('en-IN',{maximumFractionDigits:2}) : '—'; }
+function fmt2(n){ return Number.isFinite(n) ? n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'; }
+
+function initDropdowns(){
+  const years = Array.from({ length: END_YEAR - START_YEAR + 1 }, (_, index) => START_YEAR + index);
+  const sY=document.getElementById('sYear'), eY=document.getElementById('eYear');
+  sY.innerHTML=''; eY.innerHTML='';
+  sY.add(new Option('Select year','')); eY.add(new Option('Select year',''));
+  years.forEach(y=>{ sY.add(new Option('BS '+y,y)); eY.add(new Option('BS '+y,y)); });
+  sY.value=''; eY.value='';
+  
+  const sM=document.getElementById('sMonth'), eM=document.getElementById('eMonth');
+  sM.innerHTML=''; eM.innerHTML='';
+  sM.add(new Option('Select month','')); eM.add(new Option('Select month',''));
+  nepaliMonths.forEach((m,i)=>{ sM.add(new Option(m,i+1)); eM.add(new Option(m,i+1)); });
+  sM.value=''; eM.value='';
+  
+  updateDays('s'); updateDays('e');
+  ['sYear','sMonth','eYear','eMonth'].forEach(id=>{
+    document.getElementById(id).addEventListener('change',()=>updateDays(id.startsWith('s')?'s':'e'));
+  });
+}
+
+function updateDays(p){
+  const y = document.getElementById(p+'Year').value;
+  const m = document.getElementById(p+'Month').value;
+  const d = document.getElementById(p+'Day');
+  const currentValue = d.value; 
+  d.innerHTML = ''; 
+  let maxDays = 32;
+  if (y && m) { maxDays = getMonthLength(parseInt(y), parseInt(m)); }
+  for (let i = 1; i <= maxDays; i++) { d.add(new Option(i, i)); }
+  if (currentValue && parseInt(currentValue) <= maxDays && parseInt(currentValue) >= 1) {
+    d.value = currentValue;
+  } else { d.value = '1'; }
+}
+
+function getDate(p){
+  return {
+    y: document.getElementById(p+'Year').value ? parseInt(document.getElementById(p+'Year').value) : NaN,
+    m: document.getElementById(p+'Month').value ? parseInt(document.getElementById(p+'Month').value) : NaN,
+    d: document.getElementById(p+'Day').value ? parseInt(document.getElementById(p+'Day').value) : NaN
+  };
+}
+function daysBetweenBs(a,b){ return compareDates(a,b) >= 0 ? 0 : toOrdinal(b) - toOrdinal(a); }
+function monthsBetweenBs(a,b){
+  if(compareDates(a,b) >= 0) return 0;
+  return Math.max(0, (b.y - a.y) * 12 + (b.m - a.m) + 1);
+}
+
+// ==================== APP METHOD ====================
+function calcApp(P, r, s, e){
+  const totalMonths = monthsBetweenBs(s, e);
+  let balance = P;
+  let runningInterest = 0;
+  const rows = [];
+  let cursor = { ...s };
+  let remainingMonths = totalMonths;
+
+  while (remainingMonths > 0) {
+    const chunkMonths = Math.min(12, remainingMonths);
+    const nextMonth = (cursor.m - 1 + chunkMonths) % 12 + 1;
+    const nextYear = cursor.y + Math.floor((cursor.m - 1 + chunkMonths) / 12);
+    const nextDay = Math.min(cursor.d, getMonthLength(nextYear, nextMonth));
+    const boundary = { y: nextYear, m: nextMonth, d: nextDay };
+
+    const monthlyInterest = balance * (r / 100);
+    const periodInterest = monthlyInterest * chunkMonths;
+    runningInterest += periodInterest;
+    const opening = balance;
+    balance = balance + periodInterest;
+
+    rows.push({
+      period: `${cursor.y}/${cursor.m}/${cursor.d} → ${boundary.y}/${boundary.m}/${boundary.d}`,
+      opening: opening,
+      dailyInterest: monthlyInterest / 30,
+      monthlyInterest: monthlyInterest,
+      interest: periodInterest,
+      closing: balance,
+      chunkMonths: chunkMonths,
+      formula: `${fmt(opening)} × ${r} / 100 × ${chunkMonths} = ${fmt(periodInterest)}`
+    });
+
+    remainingMonths -= chunkMonths;
+    cursor = { ...boundary };
+    if (remainingMonths <= 0) break;
+  }
+  return { total: P + runningInterest, interest: runningInterest, rows: rows };
+}
+
+// ==================== VALIDATION & MAIN ====================
+function clearErrors() {
+  document.querySelectorAll('.field').forEach(f => f.classList.remove('has-error'));
+  document.querySelectorAll('.field input, .field select').forEach(i => i.classList.remove('error'));
+}
+
+function showError(fieldId, message) {
+  const field = document.getElementById(fieldId);
+  field.classList.add('has-error');
+  field.querySelector('input, select').classList.add('error');
+}
+
+function calculateApp(){
+  clearErrors();
+  const P=parseFloat(document.getElementById('principal').value)||0;
+  const r=parseFloat(document.getElementById('rate').value)||0;
+  const s=getDate('s'); const e=getDate('e');
+  
+  let hasError = false;
+  
+  if(!P) { showError('fieldPrincipal'); hasError = true; }
+  if(!r) { showError('fieldRate'); hasError = true; }
+  if(!s.y || !s.m || !s.d) { showError('fieldStartDate'); hasError = true; }
+  if(!e.y || !e.m || !e.d) { showError('fieldEndDate'); hasError = true; }
+  
+  if(hasError) return; // Stop execution if any field is empty
+
+  if(compareDates(e,s) < 0){
+    showError('fieldEndDate');
+    return;
+  }
+
+  const totalDays=daysBetweenBs(s,e);
+  const totalMonthsCalendar=monthsBetweenBs(s,e);
+  const totalMonthsFlat=Math.floor(totalMonthsCalendar);
+  const remDaysFlat=Math.round((totalMonthsCalendar-totalMonthsFlat)*30);
+  const totalYears=Math.floor(totalMonthsFlat/12);
+  const remMonths=totalMonthsFlat%12;
+
+  const app=calcApp(P,r,s,e);
+
+  const durParts=[];
+  if(totalYears>0)durParts.push(totalYears+' yr');
+  if(remMonths>0)durParts.push(remMonths+' mo');
+  if(remDaysFlat>0)durParts.push(remDaysFlat+' d');
+  document.getElementById('durationBadge').textContent='Duration: '+durParts.join(', ')+' ('+totalDays+' actual days)';
+
+  document.getElementById('appPrincipal').textContent='₹ '+fmt(P);
+  document.getElementById('appMonthlyInterest').textContent='₹ '+fmt(P*r/100);
+  document.getElementById('appDailyInterest').textContent='₹ '+fmt2(P*r/100/30);
+  document.getElementById('appInterest').textContent='₹ '+fmt(app.interest);
+  document.getElementById('appTotal').textContent='₹ '+fmt(app.total);
+  
+  document.getElementById('appTable').innerHTML=app.rows.map(row=>`
+    <tr class="app-highlight">
+      <td data-label="Period">
+        <div style="font-weight:700; font-size:15px; color: var(--text-primary);">${row.period}</div>
+        <div class="formula-cell">${row.formula}</div>
+      </td>
+      <td class="num" data-label="Opening">₹ ${fmt(row.opening)}</td>
+      <td class="num" data-label="Daily Interest">₹ ${fmt2(row.dailyInterest)}</td>
+      <td class="num" data-label="Monthly Interest">₹ ${fmt(row.monthlyInterest)}</td>
+      <td class="num" data-label="Period Interest">₹ ${fmt(row.interest)}</td>
+      <td class="num" data-label="Closing" style="font-weight:700">₹ ${fmt(row.closing)}</td>
+    </tr>
+  `).join('');
+
+  let mathHtml = `
+    <h3>📐 Carry-Forward Principal Calculation</h3>
+    <p>Each period uses the previous closing balance as the next principal.</p>
+    <p>General form: <strong>Next principal = previous closing balance</strong>, then <strong>Interest = principal × rate × time</strong>.</p>
+    <div class="big-code">
+  `;
+  
+  app.rows.forEach((row, i) => {
+    const periodLabel = i === 0 ? 'First Period' : `Period ${i+1}`;
+    mathHtml += `
+  <strong>${periodLabel} (${row.period}):</strong><br>
+  Interest = ${fmt(row.opening)} × ${r}/100 × ${row.chunkMonths} = ₹${fmt(row.interest)}<br>
+  Closing Balance = ₹${fmt(row.opening)} + ₹${fmt(row.interest)} = ₹${fmt(row.closing)}<br><br>
+    `;
+  });
+
+  mathHtml += `
+  Total months = <strong>${totalMonthsCalendar} months</strong><br>
+  Total Interest = <strong>₹${fmt(app.interest)}</strong><br>
+  Total Repayment = <strong>₹${fmt(app.total)}</strong>
+    </div>
+  `;
+  document.getElementById('mathBox').innerHTML = mathHtml;
+
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.style.display='block';
+  document.getElementById('emptyState').style.display='none';
+  
+  // Smooth scroll to results on mobile
+  if(window.innerWidth <= 720) {
+    resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+initDropdowns();
+</script>
+</body>
+</html>
